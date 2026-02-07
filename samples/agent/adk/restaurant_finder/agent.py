@@ -93,7 +93,14 @@ class RestaurantAgent:
 
     def _build_agent(self, use_ui: bool) -> LlmAgent:
         """Builds the LLM agent for the restaurant agent."""
-        LITELLM_MODEL = os.getenv("LITELLM_MODEL", "gemini/gemini-2.5-flash")
+        # Use openai/ prefix to force LiteLLM to use the OpenAI-compatible client
+        # This is required when using custom API endpoints (like hiapi.online) that mimic OpenAI's API
+        default_model = "openai/gemini-2.5-flash"
+        LITELLM_MODEL = os.getenv("LITELLM_MODEL", default_model)
+        
+        # Get configuration from environment
+        api_base = os.getenv("GEMINI_API_BASE")
+        api_key = os.getenv("GEMINI_API_KEY")
 
         if use_ui:
             # Construct the full prompt with UI instructions, examples, and schema
@@ -104,7 +111,11 @@ class RestaurantAgent:
             instruction = get_text_prompt()
 
         return LlmAgent(
-            model=LiteLlm(model=LITELLM_MODEL),
+            model=LiteLlm(
+                model=LITELLM_MODEL, 
+                api_base=api_base, 
+                api_key=api_key
+            ),
             name="restaurant_agent",
             description="An agent that finds restaurants and helps book tables.",
             instruction=instruction,
